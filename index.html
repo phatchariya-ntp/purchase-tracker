@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ติดตามสถานะการสั่งซื้อ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root{
+    --navy:#122447; --navy-2:#1c3766; --paper:#F3EFE6; --amber:#D98A2B;
+    --line:#d9d2c2; --ink:#1a1a1a; --muted:#6b7280; --green:#3f7d4f; --red:#b8442f;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--paper); color:var(--ink); font-family:'Sarabun',sans-serif; -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 24px;}
+
+  /* ---------- header + nav ---------- */
+  header{background:var(--navy); color:#fff; padding:36px 0 0;}
+  header .eyebrow{font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:#9db4dd; margin-bottom:10px;}
+  header h1{font-size:clamp(22px,3.2vw,30px); font-weight:700; margin:0 0 20px;}
+  nav{display:flex; gap:4px; overflow-x:auto; border-bottom:1px solid rgba(255,255,255,.12);}
+  nav button{
+    background:none; border:none; color:#b9c6e0; font-family:'Sarabun',sans-serif; font-size:14.5px; font-weight:600;
+    padding:12px 18px; cursor:pointer; white-space:nowrap; border-bottom:2.5px solid transparent; margin-bottom:-1px;
+  }
+  nav button.active{color:#fff; border-bottom-color:var(--amber);}
+  nav button:hover{color:#fff;}
+
+  main{padding:36px 0 60px; min-height:50vh;}
+  .view{display:none;}
+  .view.active{display:block;}
+
+  h2.title{font-size:20px; margin:0 0 6px;}
+  p.sub{color:var(--muted); font-size:14px; margin:0 0 24px;}
+
+  /* ---------- search view ---------- */
+  .search-box{display:flex; gap:10px; margin-bottom:28px; flex-wrap:wrap;}
+  .search-box input{
+    flex:1; min-width:220px; padding:13px 16px; font-size:15px; font-family:'Sarabun',sans-serif;
+    border:1.5px solid var(--line); border-radius:4px; background:#fff;
+  }
+  .search-box input:focus{outline:none; border-color:var(--navy);}
+  .btn{background:var(--navy); color:#fff; border:none; padding:13px 24px; border-radius:4px; font-weight:600; font-size:14.5px; cursor:pointer;}
+  .btn:hover{background:var(--navy-2);}
+
+  .result-card{background:#fff; border:1px solid var(--line); border-radius:6px; padding:26px; display:none;}
+  .result-card.show{display:block;}
+  .result-card .field-row{display:flex; padding:9px 0; border-bottom:1px solid #f0ece0; font-size:14px;}
+  .field-row .label{flex:0 0 190px; color:var(--muted);}
+  .field-row .value{font-weight:600;}
+  .status-pill{display:inline-block; padding:3px 12px; border-radius:20px; font-size:13px; font-weight:600;}
+  .paid-yes{color:var(--green); font-weight:700;}
+  .paid-no{color:var(--red); font-weight:700;}
+
+  .progress{margin-top:22px;}
+  .progress .step{display:flex; align-items:center; gap:10px; padding:7px 0; font-size:14px;}
+  .progress .mark{width:20px; height:20px; border-radius:50%; flex:none; display:flex; align-items:center; justify-content:center; font-size:12px; color:#fff;}
+  .mark.done{background:var(--green);}
+  .mark.pending{background:#d9d2c2; color:#a39c88;}
+  .step.done{color:var(--ink); font-weight:600;}
+  .step.pending{color:#a39c88;}
+
+  .empty-msg, .error-msg{color:var(--red); font-weight:600; margin-top:10px; display:none;}
+  .empty-msg.show, .error-msg.show{display:block;}
+
+  /* ---------- overview view ---------- */
+  table{width:100%; border-collapse:collapse; background:#fff; border:1px solid var(--line); border-radius:6px; overflow:hidden;}
+  th, td{padding:11px 14px; text-align:left; font-size:13.5px; border-bottom:1px solid #f0ece0;}
+  th{background:var(--navy); color:#fff; font-weight:600; font-size:12.5px;}
+  tr:last-child td{border-bottom:none;}
+  td.num{text-align:center; font-family:'Space Mono',monospace;}
+  tr.total-row td{font-weight:700; background:#f7f4ec;}
+
+  .stat-cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:26px;}
+  .stat-card{background:#fff; border:1px solid var(--line); border-left:4px solid var(--amber); border-radius:4px; padding:16px 18px;}
+  .stat-card .n{font-family:'Space Mono',monospace; font-size:26px; font-weight:700; color:var(--navy);}
+  .stat-card .l{font-size:12.5px; color:var(--muted); margin-top:2px;}
+
+  /* ---------- department table view ---------- */
+  .table-scroll{overflow-x:auto; border-radius:6px;}
+  .table-scroll table{min-width:900px;}
+
+  .loading{color:var(--muted); font-size:14px; padding:30px 0; text-align:center;}
+  footer{border-top:1px solid var(--line); padding:20px 0 36px; font-size:12px; color:var(--muted); text-align:center;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="eyebrow">Procurement Tracker · ข้อมูลสดจากหลังบ้าน (อ่านอย่างเดียว)</div>
+    <h1>ติดตามสถานะการสั่งซื้อ</h1>
+    <nav>
+      <button data-view="search" class="active">🔎 ค้นหาสถานะ</button>
+      <button data-view="overview">📊 ภาพรวม</button>
+      <button data-view="dept-สำนักงานใหญ่">สำนักงานใหญ่</button>
+      <button data-view="dept-โรงงาน">โรงงาน</button>
+      <button data-view="dept-OCC&ไลฟ์สด">OCC&ไลฟ์สด</button>
+      <button data-view="dept-คลังสินค้า">คลังสินค้า</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+
+    <!-- SEARCH VIEW -->
+    <section class="view active" id="view-search">
+      <h2 class="title">ค้นหาคำขอของคุณ</h2>
+      <p class="sub">พิมพ์เลขคำขอ เช่น HQ-0001, FAC-0001, OCC-0001, WH-0001</p>
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="พิมพ์เลขคำขอ...">
+        <button class="btn" id="searchBtn">ค้นหา</button>
+      </div>
+      <div class="empty-msg" id="emptyMsg">❌ ไม่พบเลขคำขอนี้ กรุณาตรวจสอบอีกครั้ง</div>
+
+      <div class="result-card" id="resultCard">
+        <div class="field-row"><div class="label">วันที่ขอ</div><div class="value" id="r-date"></div></div>
+        <div class="field-row"><div class="label">ผู้ขอ</div><div class="value" id="r-requester"></div></div>
+        <div class="field-row"><div class="label">แผนก/ทีมย่อย</div><div class="value" id="r-team"></div></div>
+        <div class="field-row"><div class="label">รายการสินค้า</div><div class="value" id="r-item"></div></div>
+        <div class="field-row"><div class="label">จำนวน</div><div class="value" id="r-qty"></div></div>
+        <div class="field-row"><div class="label">ซัพพลายเออร์</div><div class="value" id="r-supplier"></div></div>
+        <div class="field-row"><div class="label">สถานะปัจจุบัน</div><div class="value"><span class="status-pill" id="r-status"></span></div></div>
+        <div class="field-row"><div class="label">ชำระเงินแล้ว</div><div class="value" id="r-paid"></div></div>
+        <div class="field-row"><div class="label">เลขที่ PO</div><div class="value" id="r-po"></div></div>
+        <div class="field-row"><div class="label">วันที่คาดว่าจะได้รับ (ETA)</div><div class="value" id="r-eta"></div></div>
+        <div class="field-row"><div class="label">ผู้รับผิดชอบ</div><div class="value" id="r-owner"></div></div>
+        <div class="field-row"><div class="label">หมายเหตุ</div><div class="value" id="r-note"></div></div>
+
+        <div class="progress" id="r-progress"></div>
+      </div>
+    </section>
+
+    <!-- OVERVIEW VIEW -->
+    <section class="view" id="view-overview">
+      <h2 class="title">ภาพรวมทุกหน่วยงาน</h2>
+      <p class="sub">จำนวนคำขอแยกตามสถานะ อัปเดตจากข้อมูลสดในหลังบ้าน</p>
+      <div class="stat-cards" id="statCards"></div>
+      <div class="table-scroll"><table id="overviewTable"></table></div>
+      <div class="loading" id="overviewLoading">กำลังโหลดข้อมูล...</div>
+    </section>
+
+    <!-- DEPARTMENT VIEWS -->
+    <section class="view" id="view-dept-สำนักงานใหญ่"><h2 class="title">สำนักงานใหญ่</h2><div class="table-scroll"><table id="table-สำนักงานใหญ่"></table></div></section>
+    <section class="view" id="view-dept-โรงงาน"><h2 class="title">โรงงาน</h2><div class="table-scroll"><table id="table-โรงงาน"></table></div></section>
+    <section class="view" id="view-dept-OCC&ไลฟ์สด"><h2 class="title">OCC&ไลฟ์สด</h2><div class="table-scroll"><table id="table-OCC&ไลฟ์สด"></table></div></section>
+    <section class="view" id="view-dept-คลังสินค้า"><h2 class="title">คลังสินค้า</h2><div class="table-scroll"><table id="table-คลังสินค้า"></table></div></section>
+
+    <div class="error-msg" id="globalError"></div>
+  </div>
+</main>
+
+<footer>ข้อมูลดึงจาก Google Sheets (Publish to web) แบบอ่านอย่างเดียว · ไม่มีการแก้ไขข้อมูลจากหน้านี้</footer>
+
+<script>
+/* =========================================================================
+   ตั้งค่าตรงนี้ก่อนใช้งาน — ดูวิธีทำใน README
+   1) เปิด Google Sheets ของคุณ -> File -> Share -> Publish to web
+   2) เลือก "Entire Document" (หรือทีละแท็บก็ได้) -> เลือกรูปแบบ "Comma-separated values (.csv)" -> Publish
+   3) คัดลอก "รหัสไฟล์" จาก URL ของ Google Sheets มาใส่ที่ SHEET_ID ด้านล่าง
+      ตัวอย่าง URL: https://docs.google.com/spreadsheets/d/1AbCdEfGhIjKlMnOp/edit
+      รหัสไฟล์ คือส่วนที่อยู่ระหว่าง /d/ กับ /edit  ->  1AbCdEfGhIjKlMnOp
+   ========================================================================= */
+const SHEET_ID = "1pM4-d51ZLj9C3teZN5DA1h6vtbMFzX9e";
+
+const DEPARTMENTS = ["สำนักงานใหญ่", "โรงงาน", "OCC&ไลฟ์สด", "คลังสินค้า"];
+
+const STATUS_LIST = [
+  "1. หาซัพพลายเออร์/เทียบราคา", "2. ขออนุมัติซื้อ", "3. เปิด PO", "4. รออนุมัติ PO",
+  "5. ส่งเอกสารจ่าย (รอบศุกร์)", "6. รอชำระ", "7. รอจัดส่ง", "8. อยู่ระหว่างจัดส่ง", "9. ได้รับของแล้ว",
+];
+const STATUS_COLORS = {
+  "1. หาซัพพลายเออร์/เทียบราคา":"#F4CCCC","2. ขออนุมัติซื้อ":"#F9CB9C","3. เปิด PO":"#FFE599",
+  "4. รออนุมัติ PO":"#FFF2CC","5. ส่งเอกสารจ่าย (รอบศุกร์)":"#D9EAD3","6. รอชำระ":"#B6D7A8",
+  "7. รอจัดส่ง":"#A2C4C9","8. อยู่ระหว่างจัดส่ง":"#9FC5E8","9. ได้รับของแล้ว":"#B4A7D6",
+};
+
+// column order must match the Google Sheet's header row exactly (row 2 in the template)
+const COLS = ["id","date","requester","team","item","qty","unit","supplier","status","paid","poNo","poDate","nextPayDocDate","eta","received","owner","note"];
+const HEADER_LABELS = ["เลขคำขอ","วันที่ขอ","ผู้ขอ","แผนก/ทีมย่อย","รายการสินค้า","จำนวน","หน่วย","ซัพพลายเออร์ที่เลือก","สถานะปัจจุบัน","ชำระเงินแล้ว","เลขที่ PO","วันที่เปิด PO","รอบส่งเอกสารจ่ายถัดไป","วันที่คาดว่าจะได้รับ (ETA)","วันที่ได้รับจริง","ผู้รับผิดชอบ","หมายเหตุ"];
+
+let ALL_DATA = {}; // { deptName: [ {id,date,...}, ... ] }
+
+function csvUrl(sheetName){
+  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+}
+
+async function fetchDept(sheetName){
+  const res = await fetch(csvUrl(sheetName));
+  if(!res.ok) throw new Error("โหลดข้อมูล " + sheetName + " ไม่สำเร็จ");
+  const text = await res.text();
+  const parsed = Papa.parse(text.trim(), {skipEmptyLines:false});
+  // row0 = title, row1 = header, row2+ = data
+  const rows = parsed.data.slice(2);
+  return rows
+    .filter(r => r[0] && r[0].trim() !== "")
+    .map(r => {
+      const obj = {};
+      COLS.forEach((key, i) => obj[key] = (r[i] || "").trim());
+      return obj;
+    });
+}
+
+async function loadAll(){
+  try{
+    const results = await Promise.all(DEPARTMENTS.map(fetchDept));
+    DEPARTMENTS.forEach((d, i) => ALL_DATA[d] = results[i]);
+    renderOverview();
+    DEPARTMENTS.forEach(renderDeptTable);
+  }catch(err){
+    showGlobalError("โหลดข้อมูลไม่สำเร็จ: ตรวจสอบว่าตั้งค่า SHEET_ID และ Publish to web เรียบร้อยแล้ว (" + err.message + ")");
+  }
+}
+
+function showGlobalError(msg){
+  const el = document.getElementById("globalError");
+  el.textContent = msg;
+  el.classList.add("show");
+}
+
+/* ---------- search ---------- */
+function findRequest(id){
+  id = id.trim().toUpperCase();
+  for(const dept of DEPARTMENTS){
+    const list = ALL_DATA[dept] || [];
+    const found = list.find(r => r.id.toUpperCase() === id);
+    if(found) return found;
+  }
+  return null;
+}
+
+function doSearch(){
+  const id = document.getElementById("searchInput").value;
+  const card = document.getElementById("resultCard");
+  const emptyMsg = document.getElementById("emptyMsg");
+  if(!id.trim()){ card.classList.remove("show"); emptyMsg.classList.remove("show"); return; }
+
+  const r = findRequest(id);
+  if(!r){ card.classList.remove("show"); emptyMsg.classList.add("show"); return; }
+  emptyMsg.classList.remove("show");
+
+  document.getElementById("r-date").textContent = r.date;
+  document.getElementById("r-requester").textContent = r.requester;
+  document.getElementById("r-team").textContent = r.team;
+  document.getElementById("r-item").textContent = r.item;
+  document.getElementById("r-qty").textContent = r.qty + " " + r.unit;
+  document.getElementById("r-supplier").textContent = r.supplier;
+  const pill = document.getElementById("r-status");
+  pill.textContent = r.status;
+  pill.style.background = STATUS_COLORS[r.status] || "#eee";
+  const paidEl = document.getElementById("r-paid");
+  const isPaid = r.paid.includes("ชำระแล้ว");
+  paidEl.textContent = r.paid;
+  paidEl.className = "value " + (isPaid ? "paid-yes" : "paid-no");
+  document.getElementById("r-po").textContent = r.poNo || "-";
+  document.getElementById("r-eta").textContent = r.eta || "-";
+  document.getElementById("r-owner").textContent = r.owner;
+  document.getElementById("r-note").textContent = r.note || "-";
+
+  const stageIdx = STATUS_LIST.indexOf(r.status); // -1 if not matched
+  const progEl = document.getElementById("r-progress");
+  progEl.innerHTML = STATUS_LIST.map((s, i) => {
+    const done = stageIdx >= 0 && i <= stageIdx;
+    return `<div class="step ${done ? "done" : "pending"}">
+      <span class="mark ${done ? "done" : "pending"}">${done ? "✓" : ""}</span>${s}
+    </div>`;
+  }).join("");
+
+  card.classList.add("show");
+}
+
+/* ---------- overview ---------- */
+function renderOverview(){
+  document.getElementById("overviewLoading").style.display = "none";
+
+  const totalAll = DEPARTMENTS.reduce((sum,d) => sum + (ALL_DATA[d]||[]).length, 0);
+  const paidCount = DEPARTMENTS.reduce((sum,d) => sum + (ALL_DATA[d]||[]).filter(r=>r.paid.includes("ชำระแล้ว")).length, 0);
+  const unpaidCount = totalAll - paidCount;
+  const receivedCount = DEPARTMENTS.reduce((sum,d) => sum + (ALL_DATA[d]||[]).filter(r=>r.status === STATUS_LIST[8]).length, 0);
+
+  document.getElementById("statCards").innerHTML = `
+    <div class="stat-card"><div class="n">${totalAll}</div><div class="l">คำขอทั้งหมด</div></div>
+    <div class="stat-card"><div class="n">${receivedCount}</div><div class="l">ได้รับของแล้ว</div></div>
+    <div class="stat-card"><div class="n">${unpaidCount}</div><div class="l">รอชำระเงิน</div></div>
+    <div class="stat-card"><div class="n">${paidCount}</div><div class="l">ชำระแล้ว</div></div>
+  `;
+
+  let html = "<tr><th>สถานะ</th>" + DEPARTMENTS.map(d=>`<th>${d}</th>`).join("") + "<th>รวม</th></tr>";
+  STATUS_LIST.forEach(stage => {
+    let rowTotal = 0;
+    let cells = DEPARTMENTS.map(d => {
+      const c = (ALL_DATA[d]||[]).filter(r => r.status === stage).length;
+      rowTotal += c;
+      return `<td class="num">${c}</td>`;
+    }).join("");
+    html += `<tr><td style="border-left:4px solid ${STATUS_COLORS[stage]}">${stage}</td>${cells}<td class="num" style="font-weight:700">${rowTotal}</td></tr>`;
+  });
+  html += `<tr class="total-row"><td>รวมทั้งหมด</td>${DEPARTMENTS.map(d=>`<td class="num">${(ALL_DATA[d]||[]).length}</td>`).join("")}<td class="num">${totalAll}</td></tr>`;
+  document.getElementById("overviewTable").innerHTML = html;
+}
+
+/* ---------- department tables ---------- */
+function renderDeptTable(dept){
+  const rows = ALL_DATA[dept] || [];
+  let html = "<tr>" + HEADER_LABELS.map(h=>`<th>${h}</th>`).join("") + "</tr>";
+  rows.forEach(r => {
+    const isPaid = r.paid.includes("ชำระแล้ว");
+    html += `<tr>
+      <td><strong>${r.id}</strong></td><td>${r.date}</td><td>${r.requester}</td><td>${r.team}</td>
+      <td>${r.item}</td><td class="num">${r.qty}</td><td>${r.unit}</td><td>${r.supplier}</td>
+      <td><span class="status-pill" style="background:${STATUS_COLORS[r.status]||'#eee'}">${r.status}</span></td>
+      <td class="${isPaid?'paid-yes':'paid-no'}">${r.paid}</td>
+      <td>${r.poNo}</td><td>${r.poDate}</td><td>${r.nextPayDocDate}</td><td>${r.eta}</td><td>${r.received}</td>
+      <td>${r.owner}</td><td>${r.note}</td>
+    </tr>`;
+  });
+  document.getElementById("table-" + dept).innerHTML = html;
+}
+
+/* ---------- nav ---------- */
+document.querySelectorAll("nav button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
+    document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("view-" + btn.dataset.view).classList.add("active");
+  });
+});
+document.getElementById("searchBtn").addEventListener("click", doSearch);
+document.getElementById("searchInput").addEventListener("keydown", e => { if(e.key === "Enter") doSearch(); });
+
+loadAll();
+</script>
+</body>
+</html>
