@@ -196,9 +196,18 @@ async function fetchDept(sheetName){
   const parsed = Papa.parse(text.trim(), {header:false, skipEmptyLines:true});
   const rows = parsed.data;
 
+  // TEMP DEBUG - remove after troubleshooting
+  console.log("=== DEBUG:", sheetName, "===");
+  console.log("raw text (first 400 chars):", JSON.stringify(text.slice(0,400)));
+  console.log("parsed row count:", rows.length);
+  console.log("row 0:", rows[0]);
+  console.log("row 1:", rows[1]);
+  console.log("row 2:", rows[2]);
+
   // find the header row dynamically (don't assume a fixed offset - Google may or may not
   // include the merged title row in the export)
   const headerRowIdx = rows.findIndex(r => (r[0] || "").trim() === HEADER_LABELS[0]);
+  console.log("headerRowIdx:", headerRowIdx, "looking for:", JSON.stringify(HEADER_LABELS[0]));
   const dataRows = headerRowIdx >= 0 ? rows.slice(headerRowIdx + 1) : rows;
 
   return dataRows
