@@ -14,7 +14,7 @@
   }
   *{box-sizing:border-box;}
   body{margin:0; background:var(--paper); color:var(--ink); font-family:'Sarabun',sans-serif; -webkit-font-smoothing:antialiased;}
-  .wrap{max-width:1080px; margin:0 auto; padding:0 24px;}
+  .wrap{max-width:1400px; margin:0 auto; padding:0 24px;}
 
   /* ---------- header + nav ---------- */
   header{background:var(--navy); color:#fff; padding:36px 0 0;}
@@ -67,11 +67,12 @@
 
   /* ---------- overview view ---------- */
   table{width:100%; border-collapse:collapse; background:#fff; border:1px solid var(--line); border-radius:6px; overflow:hidden;}
-  th, td{padding:11px 14px; text-align:left; font-size:13.5px; border-bottom:1px solid #f0ece0;}
+  th, td{padding:11px 14px; text-align:left; font-size:13.5px; border-bottom:1px solid #f0ece0; white-space:nowrap;}
   th{background:var(--navy); color:#fff; font-weight:600; font-size:12.5px;}
   tr:last-child td{border-bottom:none;}
   td.num{text-align:center; font-family:'Space Mono',monospace;}
   tr.total-row td{font-weight:700; background:#f7f4ec;}
+  td.wrap-cell{white-space:normal; min-width:220px;}
 
   .stat-cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:26px;}
   .stat-card{background:#fff; border:1px solid var(--line); border-left:4px solid var(--amber); border-radius:4px; padding:16px 18px;}
@@ -80,7 +81,7 @@
 
   /* ---------- department table view ---------- */
   .table-scroll{overflow-x:auto; border-radius:6px;}
-  .table-scroll table{min-width:900px;}
+  .table-scroll table{min-width:1300px;}
 
   .loading{color:var(--muted); font-size:14px; padding:30px 0; text-align:center;}
   footer{border-top:1px solid var(--line); padding:20px 0 36px; font-size:12px; color:var(--muted); text-align:center;}
@@ -196,27 +197,21 @@ async function fetchDept(sheetName){
   const parsed = Papa.parse(text.trim(), {header:false, skipEmptyLines:true});
   const rows = parsed.data;
 
-  // TEMP DEBUG - remove after troubleshooting
-  console.log("=== DEBUG:", sheetName, "===");
-  console.log("raw text (first 400 chars):", JSON.stringify(text.slice(0,400)));
-  console.log("parsed row count:", rows.length);
-  console.log("row 0:", rows[0]);
-  console.log("row 1:", rows[1]);
-  console.log("row 2:", rows[2]);
+  // keep only real data rows: drop the merged title row and the header row itself,
+  // whichever ones happen to appear (Google's export is inconsistent about including the title row)
+  const dataRows = rows.filter(r => {
+    const v = (r[0] || "").trim();
+    if(v === "") return false;
+    if(v === HEADER_LABELS[0]) return false;               // header row itself
+    if(v.startsWith("ติดตามสถานะการสั่งซื้อ")) return false; // merged title row
+    return true;
+  });
 
-  // find the header row dynamically (don't assume a fixed offset - Google may or may not
-  // include the merged title row in the export)
-  const headerRowIdx = rows.findIndex(r => (r[0] || "").trim() === HEADER_LABELS[0]);
-  console.log("headerRowIdx:", headerRowIdx, "looking for:", JSON.stringify(HEADER_LABELS[0]));
-  const dataRows = headerRowIdx >= 0 ? rows.slice(headerRowIdx + 1) : rows;
-
-  return dataRows
-    .filter(r => r[0] && r[0].trim() !== "")
-    .map(r => {
-      const obj = {};
-      COLS.forEach((key, i) => obj[key] = (r[i] || "").trim());
-      return obj;
-    });
+  return dataRows.map(r => {
+    const obj = {};
+    COLS.forEach((key, i) => obj[key] = (r[i] || "").trim());
+    return obj;
+  });
 }
 
 async function loadAll(){
@@ -325,11 +320,11 @@ function renderDeptTable(dept){
     const isPaid = r.paid.includes("ชำระแล้ว");
     html += `<tr>
       <td><strong>${r.id}</strong></td><td>${r.date}</td><td>${r.requester}</td><td>${r.team}</td>
-      <td>${r.item}</td><td class="num">${r.qty}</td><td>${r.unit}</td><td>${r.supplier}</td>
+      <td class="wrap-cell">${r.item}</td><td class="num">${r.qty}</td><td>${r.unit}</td><td>${r.supplier}</td>
       <td><span class="status-pill" style="background:${STATUS_COLORS[r.status]||'#eee'}">${r.status}</span></td>
       <td class="${isPaid?'paid-yes':'paid-no'}">${r.paid}</td>
       <td>${r.poNo}</td><td>${r.poDate}</td><td>${r.nextPayDocDate}</td><td>${r.eta}</td><td>${r.received}</td>
-      <td>${r.owner}</td><td>${r.note}</td>
+      <td>${r.owner}</td><td class="wrap-cell">${r.note}</td>
     </tr>`;
   });
   document.getElementById("table-" + dept).innerHTML = html;
