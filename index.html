@@ -192,14 +192,13 @@ async function fetchDept(sheetName){
   const res = await fetch(csvUrl(sheetName));
   if(!res.ok) throw new Error("โหลดข้อมูล " + sheetName + " ไม่สำเร็จ");
   const text = await res.text();
-  const parsed = Papa.parse(text.trim(), {skipEmptyLines:false});
-  // row0 = title, row1 = header, row2+ = data
-  const rows = parsed.data.slice(2);
-  return rows
-    .filter(r => r[0] && r[0].trim() !== "")
-    .map(r => {
+  const parsed = Papa.parse(text.trim(), {header:true, skipEmptyLines:true});
+  // map by header label (robust regardless of whether Google includes the merged title row)
+  return parsed.data
+    .filter(row => row[HEADER_LABELS[0]] && row[HEADER_LABELS[0]].trim() !== "")
+    .map(row => {
       const obj = {};
-      COLS.forEach((key, i) => obj[key] = (r[i] || "").trim());
+      COLS.forEach((key, i) => obj[key] = (row[HEADER_LABELS[i]] || "").trim());
       return obj;
     });
 }
