@@ -198,13 +198,14 @@ async function fetchDept(sheetName){
   const rows = parsed.data;
 
   // keep only real data rows: drop the merged title row and the header row itself,
-  // whichever ones happen to appear (Google's export is inconsistent about including the title row)
+  // whichever ones happen to appear (Google's export is inconsistent about including the title row).
+  // a row counts as "real data" if ANY of the key columns (id through status) has content —
+  // not just the request-ID column, since some rows may only have a PO number filled in.
   const dataRows = rows.filter(r => {
-    const v = (r[0] || "").trim();
-    if(v === "") return false;
-    if(v === HEADER_LABELS[0]) return false;               // header row itself
-    if(v.startsWith("ติดตามสถานะการสั่งซื้อ")) return false; // merged title row
-    return true;
+    const firstCell = (r[0] || "").trim();
+    if(firstCell === HEADER_LABELS[0]) return false;               // header row itself
+    if(firstCell.startsWith("ติดตามสถานะการสั่งซื้อ")) return false; // merged title row
+    return r.slice(0, 9).some(v => (v || "").trim() !== "");
   });
 
   return dataRows.map(r => {
