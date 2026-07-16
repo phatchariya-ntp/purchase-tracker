@@ -110,9 +110,9 @@
     <!-- SEARCH VIEW -->
     <section class="view active" id="view-search">
       <h2 class="title">ค้นหาคำขอของคุณ</h2>
-      <p class="sub">พิมพ์เลขคำขอ เช่น HQ-0001, FAC-0001, OCC-0001, WH-0001</p>
+      <p class="sub">พิมพ์เลขคำขอ หรือเลขที่ PO เช่น HQ-0001 หรือ PO-2607-001</p>
       <div class="search-box">
-        <input type="text" id="searchInput" placeholder="พิมพ์เลขคำขอ...">
+        <input type="text" id="searchInput" placeholder="พิมพ์เลขคำขอ หรือเลขที่ PO...">
         <button class="btn" id="searchBtn">ค้นหา</button>
       </div>
       <div class="empty-msg" id="emptyMsg">❌ ไม่พบเลขคำขอนี้ กรุณาตรวจสอบอีกครั้ง</div>
@@ -236,7 +236,7 @@ function findRequest(id){
   id = id.trim().toUpperCase();
   for(const dept of DEPARTMENTS){
     const list = ALL_DATA[dept] || [];
-    const found = list.find(r => r.id.toUpperCase() === id);
+    const found = list.find(r => r.id.toUpperCase() === id || (r.poNo && r.poNo.toUpperCase() === id));
     if(found) return found;
   }
   return null;
