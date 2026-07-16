@@ -35,6 +35,15 @@
   h2.title{font-size:20px; margin:0 0 6px;}
   p.sub{color:var(--muted); font-size:14px; margin:0 0 24px;}
 
+  .filter-bar{display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;}
+  .filter-btn{
+    background:#fff; border:1.5px solid var(--line); color:var(--muted);
+    padding:8px 16px; border-radius:20px; font-family:'Sarabun',sans-serif; font-size:13.5px; font-weight:600;
+    cursor:pointer;
+  }
+  .filter-btn:hover{border-color:var(--navy);}
+  .filter-btn.active{background:var(--navy); border-color:var(--navy); color:#fff;}
+
   /* ---------- search view ---------- */
   .search-box{display:flex; gap:10px; margin-bottom:28px; flex-wrap:wrap;}
   .search-box input{
@@ -159,10 +168,42 @@
     </section>
 
     <!-- DEPARTMENT VIEWS -->
-    <section class="view" id="view-dept-สำนักงานใหญ่"><h2 class="title">สำนักงานใหญ่</h2><div class="table-scroll dept-table"><table id="table-สำนักงานใหญ่"></table></div></section>
-    <section class="view" id="view-dept-โรงงาน"><h2 class="title">โรงงาน</h2><div class="table-scroll dept-table"><table id="table-โรงงาน"></table></div></section>
-    <section class="view" id="view-dept-OCC&ไลฟ์สด"><h2 class="title">OCC&ไลฟ์สด</h2><div class="table-scroll dept-table"><table id="table-OCC&ไลฟ์สด"></table></div></section>
-    <section class="view" id="view-dept-คลังสินค้า"><h2 class="title">คลังสินค้า</h2><div class="table-scroll dept-table"><table id="table-คลังสินค้า"></table></div></section>
+    <section class="view" id="view-dept-สำนักงานใหญ่">
+      <h2 class="title">สำนักงานใหญ่</h2>
+      <div class="filter-bar" data-dept="สำนักงานใหญ่">
+        <button class="filter-btn active" data-filter="all">ทั้งหมด</button>
+        <button class="filter-btn" data-filter="progress">กำลังดำเนินการ</button>
+        <button class="filter-btn" data-filter="received">ได้รับของแล้ว</button>
+      </div>
+      <div class="table-scroll dept-table"><table id="table-สำนักงานใหญ่"></table></div>
+    </section>
+    <section class="view" id="view-dept-โรงงาน">
+      <h2 class="title">โรงงาน</h2>
+      <div class="filter-bar" data-dept="โรงงาน">
+        <button class="filter-btn active" data-filter="all">ทั้งหมด</button>
+        <button class="filter-btn" data-filter="progress">กำลังดำเนินการ</button>
+        <button class="filter-btn" data-filter="received">ได้รับของแล้ว</button>
+      </div>
+      <div class="table-scroll dept-table"><table id="table-โรงงาน"></table></div>
+    </section>
+    <section class="view" id="view-dept-OCC&ไลฟ์สด">
+      <h2 class="title">OCC&ไลฟ์สด</h2>
+      <div class="filter-bar" data-dept="OCC&ไลฟ์สด">
+        <button class="filter-btn active" data-filter="all">ทั้งหมด</button>
+        <button class="filter-btn" data-filter="progress">กำลังดำเนินการ</button>
+        <button class="filter-btn" data-filter="received">ได้รับของแล้ว</button>
+      </div>
+      <div class="table-scroll dept-table"><table id="table-OCC&ไลฟ์สด"></table></div>
+    </section>
+    <section class="view" id="view-dept-คลังสินค้า">
+      <h2 class="title">คลังสินค้า</h2>
+      <div class="filter-bar" data-dept="คลังสินค้า">
+        <button class="filter-btn active" data-filter="all">ทั้งหมด</button>
+        <button class="filter-btn" data-filter="progress">กำลังดำเนินการ</button>
+        <button class="filter-btn" data-filter="received">ได้รับของแล้ว</button>
+      </div>
+      <div class="table-scroll dept-table"><table id="table-คลังสินค้า"></table></div>
+    </section>
 
     <div class="error-msg" id="globalError"></div>
   </div>
@@ -331,9 +372,17 @@ function renderOverview(){
 // columns hidden from the table view only (still filled in the backend, still used in search)
 const DEPT_TABLE_HIDDEN_LABELS = ["วันที่ขอ", "วันที่เปิด PO", "ผู้รับผิดชอบ"];
 const DEPT_VISIBLE_LABELS = HEADER_LABELS.filter(h => !DEPT_TABLE_HIDDEN_LABELS.includes(h));
+const RECEIVED_STATUS = STATUS_LIST[8]; // "9. ได้รับของแล้ว"
+const DEPT_FILTER = {}; // current filter per department: 'all' | 'progress' | 'received'
+DEPARTMENTS.forEach(d => DEPT_FILTER[d] = "all");
 
 function renderDeptTable(dept){
-  const rows = ALL_DATA[dept] || [];
+  const all = ALL_DATA[dept] || [];
+  const filter = DEPT_FILTER[dept];
+  const rows = filter === "received" ? all.filter(r => r.status === RECEIVED_STATUS)
+             : filter === "progress" ? all.filter(r => r.status !== RECEIVED_STATUS)
+             : all;
+
   let html = "<tr>" + DEPT_VISIBLE_LABELS.map(h=>`<th>${h}</th>`).join("") + "</tr>";
   rows.forEach(r => {
     const isPaid = r.paid.includes("ชำระแล้ว");
@@ -348,6 +397,18 @@ function renderDeptTable(dept){
   });
   document.getElementById("table-" + dept).innerHTML = html;
 }
+
+document.querySelectorAll(".filter-bar").forEach(bar => {
+  const dept = bar.dataset.dept;
+  bar.querySelectorAll(".filter-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      bar.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      DEPT_FILTER[dept] = btn.dataset.filter;
+      renderDeptTable(dept);
+    });
+  });
+});
 
 /* ---------- nav ---------- */
 document.querySelectorAll("nav button").forEach(btn => {
