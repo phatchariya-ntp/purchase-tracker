@@ -73,9 +73,23 @@
   td.num{text-align:center; font-family:'Space Mono',monospace;}
   tr.total-row td{font-weight:700; background:#f7f4ec;}
   td.wrap-cell{min-width:0;}
-  .table-scroll table th:nth-child(5), .table-scroll table td:nth-child(5){width:13%;}
-  .table-scroll table th:nth-child(9), .table-scroll table td:nth-child(9){width:11%;}
-  .table-scroll table th:nth-child(17), .table-scroll table td:nth-child(17){width:11%;}
+  .dept-table table th:nth-child(1),  .dept-table table td:nth-child(1) {width:5%;}  /* เลขคำขอ */
+  .dept-table table th:nth-child(2),  .dept-table table td:nth-child(2) {width:5%;}  /* วันที่ขอ */
+  .dept-table table th:nth-child(3),  .dept-table table td:nth-child(3) {width:6%;}  /* ผู้ขอ */
+  .dept-table table th:nth-child(4),  .dept-table table td:nth-child(4) {width:6%;}  /* แผนก */
+  .dept-table table th:nth-child(5),  .dept-table table td:nth-child(5) {width:8%;}  /* รายการสินค้า */
+  .dept-table table th:nth-child(6),  .dept-table table td:nth-child(6) {width:5%;}  /* จำนวน */
+  .dept-table table th:nth-child(7),  .dept-table table td:nth-child(7) {width:5%;}  /* หน่วย */
+  .dept-table table th:nth-child(8),  .dept-table table td:nth-child(8) {width:8%;}  /* ซัพพลายเออร์ */
+  .dept-table table th:nth-child(9),  .dept-table table td:nth-child(9) {width:7%;}  /* สถานะ */
+  .dept-table table th:nth-child(10), .dept-table table td:nth-child(10){width:5%;}  /* ชำระเงินแล้ว */
+  .dept-table table th:nth-child(11), .dept-table table td:nth-child(11){width:6%;}  /* เลขที่ PO */
+  .dept-table table th:nth-child(12), .dept-table table td:nth-child(12){width:5%;}  /* วันที่เปิด PO */
+  .dept-table table th:nth-child(13), .dept-table table td:nth-child(13){width:5%;}  /* รอบส่งเอกสารจ่าย */
+  .dept-table table th:nth-child(14), .dept-table table td:nth-child(14){width:5%;}  /* ETA */
+  .dept-table table th:nth-child(15), .dept-table table td:nth-child(15){width:5%;}  /* วันที่ได้รับจริง */
+  .dept-table table th:nth-child(16), .dept-table table td:nth-child(16){width:6%;}  /* ผู้รับผิดชอบ */
+  .dept-table table th:nth-child(17), .dept-table table td:nth-child(17){width:8%;}  /* หมายเหตุ */
 
   .stat-cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:26px;}
   .stat-card{background:#fff; border:1px solid var(--line); border-left:4px solid var(--amber); border-radius:4px; padding:16px 18px;}
@@ -148,10 +162,10 @@
     </section>
 
     <!-- DEPARTMENT VIEWS -->
-    <section class="view" id="view-dept-สำนักงานใหญ่"><h2 class="title">สำนักงานใหญ่</h2><div class="table-scroll"><table id="table-สำนักงานใหญ่"></table></div></section>
-    <section class="view" id="view-dept-โรงงาน"><h2 class="title">โรงงาน</h2><div class="table-scroll"><table id="table-โรงงาน"></table></div></section>
-    <section class="view" id="view-dept-OCC&ไลฟ์สด"><h2 class="title">OCC&ไลฟ์สด</h2><div class="table-scroll"><table id="table-OCC&ไลฟ์สด"></table></div></section>
-    <section class="view" id="view-dept-คลังสินค้า"><h2 class="title">คลังสินค้า</h2><div class="table-scroll"><table id="table-คลังสินค้า"></table></div></section>
+    <section class="view" id="view-dept-สำนักงานใหญ่"><h2 class="title">สำนักงานใหญ่</h2><div class="table-scroll dept-table"><table id="table-สำนักงานใหญ่"></table></div></section>
+    <section class="view" id="view-dept-โรงงาน"><h2 class="title">โรงงาน</h2><div class="table-scroll dept-table"><table id="table-โรงงาน"></table></div></section>
+    <section class="view" id="view-dept-OCC&ไลฟ์สด"><h2 class="title">OCC&ไลฟ์สด</h2><div class="table-scroll dept-table"><table id="table-OCC&ไลฟ์สด"></table></div></section>
+    <section class="view" id="view-dept-คลังสินค้า"><h2 class="title">คลังสินค้า</h2><div class="table-scroll dept-table"><table id="table-คลังสินค้า"></table></div></section>
 
     <div class="error-msg" id="globalError"></div>
   </div>
