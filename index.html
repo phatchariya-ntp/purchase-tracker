@@ -74,22 +74,19 @@
   tr.total-row td{font-weight:700; background:#f7f4ec;}
   td.wrap-cell{min-width:0;}
   .dept-table table th:nth-child(1),  .dept-table table td:nth-child(1) {width:5%;}  /* เลขคำขอ */
-  .dept-table table th:nth-child(2),  .dept-table table td:nth-child(2) {width:5%;}  /* วันที่ขอ */
-  .dept-table table th:nth-child(3),  .dept-table table td:nth-child(3) {width:6%;}  /* ผู้ขอ */
-  .dept-table table th:nth-child(4),  .dept-table table td:nth-child(4) {width:6%;}  /* แผนก */
-  .dept-table table th:nth-child(5),  .dept-table table td:nth-child(5) {width:8%;}  /* รายการสินค้า */
-  .dept-table table th:nth-child(6),  .dept-table table td:nth-child(6) {width:5%;}  /* จำนวน */
-  .dept-table table th:nth-child(7),  .dept-table table td:nth-child(7) {width:5%;}  /* หน่วย */
-  .dept-table table th:nth-child(8),  .dept-table table td:nth-child(8) {width:8%;}  /* ซัพพลายเออร์ */
-  .dept-table table th:nth-child(9),  .dept-table table td:nth-child(9) {width:7%;}  /* สถานะ */
-  .dept-table table th:nth-child(10), .dept-table table td:nth-child(10){width:5%;}  /* ชำระเงินแล้ว */
-  .dept-table table th:nth-child(11), .dept-table table td:nth-child(11){width:6%;}  /* เลขที่ PO */
-  .dept-table table th:nth-child(12), .dept-table table td:nth-child(12){width:5%;}  /* วันที่เปิด PO */
-  .dept-table table th:nth-child(13), .dept-table table td:nth-child(13){width:5%;}  /* รอบส่งเอกสารจ่าย */
-  .dept-table table th:nth-child(14), .dept-table table td:nth-child(14){width:5%;}  /* ETA */
-  .dept-table table th:nth-child(15), .dept-table table td:nth-child(15){width:5%;}  /* วันที่ได้รับจริง */
-  .dept-table table th:nth-child(16), .dept-table table td:nth-child(16){width:6%;}  /* ผู้รับผิดชอบ */
-  .dept-table table th:nth-child(17), .dept-table table td:nth-child(17){width:8%;}  /* หมายเหตุ */
+  .dept-table table th:nth-child(2),  .dept-table table td:nth-child(2) {width:7%;}  /* ผู้ขอ */
+  .dept-table table th:nth-child(3),  .dept-table table td:nth-child(3) {width:7%;}  /* แผนก */
+  .dept-table table th:nth-child(4),  .dept-table table td:nth-child(4) {width:10%;} /* รายการสินค้า */
+  .dept-table table th:nth-child(5),  .dept-table table td:nth-child(5) {width:6%;}  /* จำนวน */
+  .dept-table table th:nth-child(6),  .dept-table table td:nth-child(6) {width:6%;}  /* หน่วย */
+  .dept-table table th:nth-child(7),  .dept-table table td:nth-child(7) {width:10%;} /* ซัพพลายเออร์ */
+  .dept-table table th:nth-child(8),  .dept-table table td:nth-child(8) {width:9%;}  /* สถานะ */
+  .dept-table table th:nth-child(9),  .dept-table table td:nth-child(9) {width:6%;}  /* ชำระเงินแล้ว */
+  .dept-table table th:nth-child(10), .dept-table table td:nth-child(10){width:7%;}  /* เลขที่ PO */
+  .dept-table table th:nth-child(11), .dept-table table td:nth-child(11){width:6%;}  /* รอบส่งเอกสารจ่าย */
+  .dept-table table th:nth-child(12), .dept-table table td:nth-child(12){width:6%;}  /* ETA */
+  .dept-table table th:nth-child(13), .dept-table table td:nth-child(13){width:6%;}  /* วันที่ได้รับจริง */
+  .dept-table table th:nth-child(14), .dept-table table td:nth-child(14){width:9%;}  /* หมายเหตุ */
 
   .stat-cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:26px;}
   .stat-card{background:#fff; border:1px solid var(--line); border-left:4px solid var(--amber); border-radius:4px; padding:16px 18px;}
@@ -331,18 +328,22 @@ function renderOverview(){
 }
 
 /* ---------- department tables ---------- */
+// columns hidden from the table view only (still filled in the backend, still used in search)
+const DEPT_TABLE_HIDDEN_LABELS = ["วันที่ขอ", "วันที่เปิด PO", "ผู้รับผิดชอบ"];
+const DEPT_VISIBLE_LABELS = HEADER_LABELS.filter(h => !DEPT_TABLE_HIDDEN_LABELS.includes(h));
+
 function renderDeptTable(dept){
   const rows = ALL_DATA[dept] || [];
-  let html = "<tr>" + HEADER_LABELS.map(h=>`<th>${h}</th>`).join("") + "</tr>";
+  let html = "<tr>" + DEPT_VISIBLE_LABELS.map(h=>`<th>${h}</th>`).join("") + "</tr>";
   rows.forEach(r => {
     const isPaid = r.paid.includes("ชำระแล้ว");
     html += `<tr>
-      <td><strong>${r.id}</strong></td><td>${r.date}</td><td>${r.requester}</td><td>${r.team}</td>
+      <td><strong>${r.id}</strong></td><td>${r.requester}</td><td>${r.team}</td>
       <td class="wrap-cell">${r.item}</td><td class="num">${r.qty}</td><td>${r.unit}</td><td>${r.supplier}</td>
       <td><span class="status-pill" style="background:${STATUS_COLORS[r.status]||'#eee'}">${r.status}</span></td>
       <td class="${isPaid?'paid-yes':'paid-no'}">${r.paid}</td>
-      <td>${r.poNo}</td><td>${r.poDate}</td><td>${r.nextPayDocDate}</td><td>${r.eta}</td><td>${r.received}</td>
-      <td>${r.owner}</td><td class="wrap-cell">${r.note}</td>
+      <td>${r.poNo}</td><td>${r.nextPayDocDate}</td><td>${r.eta}</td><td>${r.received}</td>
+      <td class="wrap-cell">${r.note}</td>
     </tr>`;
   });
   document.getElementById("table-" + dept).innerHTML = html;
